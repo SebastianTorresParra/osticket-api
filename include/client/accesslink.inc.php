@@ -1,4 +1,28 @@
 <?php
+echo "<style>
+.loader {
+  border: 16px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 16px solid #3498db;
+  width: 120px;
+  margin-left: 40%;
+  height: 120px;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 2s linear infinite;
+}
+
+/* Safari */
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>";
+
 if(!defined('OSTCLIENTINC')) die('Access Denied');
 
 $email=Format::input($_POST['lemail']?$_POST['lemail']:$_GET['e']);
@@ -63,5 +87,17 @@ if ($cfg->getClientRegistrationMode() != 'disabled'
     echo sprintf(
     __("If this is your first time contacting us or you've lost the ticket number, please %s open a new ticket %s"),
         '<a href="open.php">','</a>');
-} ?>
+}
+if(isset($_GET['e']) && isset($_GET['t'])){
+    echo "<script type='text/javascript'>
+        document.getElementById('clientLogin').style.visibility = 'hidden';
+        var content = document.getElementById('content');
+        var loader = document.createElement('div');
+        loader.className = 'loader';
+        document.getElementById('content').prepend(loader);
+        document.getElementById('clientLogin').submit();
+        </script>";
+    }
+?>
+
 </p>
