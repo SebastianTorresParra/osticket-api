@@ -228,7 +228,6 @@ class TicketApiController extends ApiController {
             if(!($key=$this->requireApiKey()))
                 return $this->exerr(401, __('API key not authorized'));
                 // mysqli_set_charset('utf8mb4');
-
                 $clientUserName = $_REQUEST['clientUserMail'];
                 
                 if(!($clientUserName))

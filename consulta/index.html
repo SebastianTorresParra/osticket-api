@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet">
+  <link href="./css/vuetify.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+  <style>
+  #app{
+      background-color:#CFD8DC;
+  }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <template v-if="v_login">
+      <v-app id="inspire">
+        <v-app id="inspire">
+          <v-main>
+            <v-container class="fill-height" fluid>
+              <v-row align="center" justify="center">
+                <v-col cols="12" sm="8" md="4">
+                  <v-card class="elevation-12"     :loading="loading">
+                    <template slot="progress">
+                      <v-progress-linear
+                        color="deep-purple"
+                        height="10"
+                        indeterminate
+                      ></v-progress-linear>
+                    </template>
+                    <v-toolbar color="primary" dark flat>
+                      <v-toolbar-title>Consulta tus tickets</v-toolbar-title>
+                      <v-spacer></v-spacer>
+                    </v-toolbar>
+                    <v-card-text>
+                      <v-form v-on:submit.prevent="consultar(email)">
+                        <v-text-field
+                        v-model="email"
+                        label="Correo" 
+                        name="login" 
+                        prepend-icon="mdi-account" 
+                        type="text">
+                      </v-text-field>
+                      <p>Vas a consultar los ticket con el correo: {{ email }}</p>
+                      <v-alert v-if="alert"
+                        v-model="alert"
+                        dismissible color="cyan" border="left"
+                        elevation="2" colored-border>
+                        No hay tickets registrados con el correo <strong>{{email}}</strong>
+                      </v-alert>
+                      </v-form>
+                    </v-card-text>
+                    <v-card-actions>
+                      <v-spacer></v-spacer>
+                      <v-btn color="primary" v-on:click="consultar(email)">Consultar</v-btn>
+                    </v-card-actions>
+                  </v-card>
+                </v-col>
+              </v-row>
+            </v-container>
+          </v-main>
+        </v-app>
+      </v-app>
+    </template>
+
+    <template v-if="v_table">
+      <v-app id="inspire">
+        <template>
+          <v-card color="grey lighten-4" flat tile>
+            <v-toolbar dense>
+              <v-toolbar-title>Tickets</v-toolbar-title>
+              <v-spacer></v-spacer>
+              <v-btn icon @click="cerrar()">
+                <v-icon>mdi-close</v-icon>
+              </v-btn>
+            </v-toolbar>
+          </v-card>
+        </template>
+        <v-main>        
+            <v-card class="mx-auto mt-5" max-width="900">
+              <template v-if="welcome">
+                <div>
+                  <v-alert
+                    dismissible
+                    color="cyan"
+                    border="left"
+                    elevation="2"
+                    colored-border
+                    v-model="alert"
+                  >
+                   Bienvenido <strong>{{email}}</strong>
+                  </v-alert>
+                </div>
+              </template>     
+              <v-card-title>
+                Tickets
+                <v-spacer></v-spacer>
+                <v-text-field
+                  v-model="search"
+                  append-icon="mdi-magnify"
+                  label="Buscar"
+                  single-line
+                  hide-details
+                ></v-text-field>
+              </v-card-title>
+              <v-data-table :headers="columnas" :items="tickets" :search="search"
+                class="elevation-19" color="#007b99">
+                <template v-slot:item.ticket_status="{ item }">
+                  <v-tooltip top>
+                    <template v-slot:activator="{ on, attrs }">
+                      <v-chip :color="getColor(item.statusId)" dark v-bind="attrs"
+                      v-on="on">
+                        {{ item.ticket_status }}
+                      </v-chip>
+                    </template>
+                    <span>{{getPersonalByStatus(item)}}</span>
+                  </v-tooltip>
+                </template>
+                <template v-slot:item.last_message_timestamp="{ item }">
+                  {{ item.last_message_timestamp }}  
+                  <v-icon color="purple darken-4">
+                    mdi-message-text
+                  </v-icon>
+                  {{ item.thread_entries.length }}
+                </template>
+                <template v-slot:item.action_open="{ item }">
+                  <v-btn color="primary"  @click="abrirTicket(item)" fab x-small color="purple darken-4">
+                    <v-icon>mdi-arrow-right</v-icon>
+                  </v-btn>
+              </template>
+              </v-data-table>
+            </v-card>
+        </v-main>
+      </v-app>
+    </template>
+  </div>
+  <script src="./js/vue.min.js"></script>
+  <script src="./js/vuetify.min.js"></script>
+  <script src="./js/axios.min.js"></script>
+  <script src="./js/moment.min.js"></script>
+  <script src="./js/moment-with-locales.min.js"></script>
+
+  <!-- <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.20.0/axios.min.js" integrity="sha512-quHCp3WbBNkwLfYUMd+KwBAgpVukJu5MncuQaWXgCrfgcxCJAq/fo+oqrRKOj+UKEmyMCG3tb8RB63W+EmrOBg==" crossorigin="anonymous"></script> -->
+  <script>
+    moment.locale('es')
+    new Vue({
+      el: '#app',
+      vuetify: new Vuetify(),
+      data(){
+          return{
+            columnas: [
+                    { text: 'Ticket', value: 'ticket_number', class: 'grey lighten-2'},
+                    { text: 'Asunto', value: 'subject', class: 'grey lighten-2'},
+                    { text: 'Estado', value: 'ticket_status', class: 'grey lighten-2'},
+                    { text: 'Fecha de Creacion', value: 'create_timestamp', class: 'grey lighten-2'},
+                    { text: 'Ultima respuesta', value: 'last_message_timestamp', class: 'grey lighten-2'},
+                    // { text: 'Encargado', value: 'assigned_to[0].name', class: 'grey lighten-2'},
+                    { text: 'Abrir', value: 'action_open', class: 'grey lighten-2'},
+            ],
+            search: '',
+            tickets: {},
+            ticket:{},
+            email:'',
+            v_table:false,
+            v_login:true,
+            alert:false,
+            welcome:true,
+            url:'https://teidos.com/tickets/osticket/view.php',
+            //cambiar la ruta en la implementacion a la drecion base de ostickets
+            // example: http://midominio/osticket/view.php -> o url definida para la consulta de tickets de usuario
+            // example :http://midominio/osticket/
+            loading: true,
+          }
+      },
+      created(){
+        if(localStorage.getItem("email")){
+          //se genera una variable de cache en el navegador del usario para tener un session
+          this.email = localStorage.getItem("email");
+          this.consultar(this.email);
+        }
+      },
+      watch: {
+        steps (val) {
+          if (this.e1 > val) {
+            this.e1 = val
+          }
+        },
+      },
+      methods:{
+        getColor (estado) {
+          //cambio de colores en botones de estado
+          if (estado == 1) return 'blue'
+          else if (estado == 2) return 'green'
+          else return 'red'
+        },
+        getPersonalByStatus(ticket){
+          if(ticket.assigned_to.length >0){
+            if (ticket.statusId == 1) return 'Asigando a: ' + ticket.assigned_to[0].name
+            else if (ticket.statusId == 2) return 'Cerrodo por: ' + ticket.assigned_to[0].name
+            else return 'Asigando a: ' + ticket.assigned_to[0].name
+          }else{
+            return 'En asignación'
+          }
+        },
+        consultar(email){
+          //uso de la libreria axios, para consultas apis, sin uso de scrips de php
+          //tiene soporte para cualquier tipo de solicitud http
+          //cambiar la ruta en la implementacion a la drecion base de ostickets
+          // example: http://midominio/osticket/api/http.php/tickets/clientTickets
+          var url = "https://teidos.com/tickets/osticket/api/http.php/tickets/clientTickets";
+          axios.get(url,{
+              params:{"clientUserMail" :email.replace(/ /g, "")},
+              headers:{"X-API-Key" : "2ABC7864B5EFB7A164093FA155E81CD5"},
+              // config
+            }).then(response => {
+              this.loading = true;
+              setInterval(() =>{  
+              }, 2000);
+              if(response.data.status_code == 0){
+                localStorage.setItem("email", email);
+                this.email = localStorage.getItem("email");
+                this.v_table = true;
+                this.v_login = false;
+                response.data.tickets.forEach(ticket => {
+                  ticket.create_timestamp = ticket.create_timestamp ? moment(ticket.create_timestamp).format('LLL') : '';
+                  ticket.last_message_timestamp = ticket.last_message_timestamp ? moment(ticket.last_message_timestamp).format('LLL') : '';
+                });
+                this.tickets = response.data.tickets;
+              }else{
+                this.alert = true;
+              }
+
+          },
+          (error) => {
+            this.alert = true;
+          }); 
+        },
+        abrirTicket(ticket){
+          //envia al usuario a osticket y en la ventana de consultar se le envia los datos de sesion
+          var url =  this.url + '?e=' + this.email + '&t=' + ticket.ticket_number;
+          console.log(url,'url');
+          window.open(url, '_blank');
+        },
+        cerrar(){
+          localStorage.clear();
+          this.v_table = false;
+          this.v_login = true;
+        }
+      },
+      })
+  </script>
+</body>
+</html>
